@@ -10,24 +10,35 @@ function App() {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("underwood");
 
   useEffect(() => {
-    ; (async () => {
-      try {
-        setLoading(true)
-        setError(false)
-        const response = await axios.get("api/products");
-        console.log(response.data);
-        setProducts(response.data);
-        setLoading(false)
-      } catch (error) {
-        setError(true)
-        setLoading(false)
-      }
-    })()
-  }, [])
+    const controller = new AbortController()
+      ; (async () => {
+        try {
+          setLoading(true)
+          setError(false)
+          const response = await axios.get("/api/products? search =" + search, {
+            signal: controller.signal
+          });
+          console.log(response.data);
+          setProducts(response.data);
+          setLoading(false)
+        } catch (error) {
+          if (axios.isCancel(error)) {
+            console.log("Request canceled", error.message);
+            return;
+          }
+          setError(true)
+          setLoading(false)
+        }
+      })()
 
+    //cleanup
+    return () => {
+      controller.abort();
+    }
+  }, [search])
 
   // loading
   if (loading) {
@@ -51,6 +62,7 @@ function App() {
       <input type="text" placeholder='Search'
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+
       />
 
       {loading && (<h1>Loading...</h1>)}
